@@ -120,11 +120,16 @@ try {
         case 'debug':
         case 'evaluate':
         case 'remote_lab':
-        case 'generate_testbench':
             if (! $instance->$action && ! $vpl->has_capability(VPL_GRADE_CAPABILITY)) {
                 throw new Exception(get_string('notavailable'));
             }
             $result->response = mod_vpl_edit::execute($vpl, $userid, $action, $actiondata);
+            break;
+        case 'generate_testbench':
+            if (! $instance->generate_testbench && ! $vpl->has_capability(VPL_GRADE_CAPABILITY)) {
+                throw new Exception(get_string('notavailable'));
+            }
+            $result->response = mod_vpl_edit::generate_testbench_file($vpl, $userid, $actiondata);
             break;
         case 'retrieve':
             $result->response = mod_vpl_edit::retrieve_result($vpl, $userid, $actiondata->processid);

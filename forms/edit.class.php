@@ -262,13 +262,87 @@ class mod_vpl_edit {
             $submission = new mod_vpl_submission_CE($vpl, $lastsub);
         }
         $code = ['run' => 0, 'debug' => 1, 'evaluate' => 2, 'test_evaluate' => 3,
-                 'remote_lab' => 4, 'generate_testbench' => 5];
+                 'remote_lab' => 4];
         $traslate = ['run' => 'run', 'debug' => 'debugged',
                      'evaluate' => 'evaluated', 'test_evaluate' => 'evaluated',
-                     'remote_lab' => 'run', 'generate_testbench' => 'run'];
+                     'remote_lab' => 'run'];
         $eventclass = '\mod_vpl\event\submission_' . $traslate[$action];
         $eventclass::log($submission);
         return $submission->run($code[$action], $options);
+    }
+
+    /**
+     * Generate a VHDL testbench from the files sent by the IDE.
+     *
+     * Parses the first VHDL source file found in $actiondata->files,
+     * extracts the entity name and port block, and returns a testbench
+     * skeleton as a new file named _tb.vhd.
+     *
+     * @param mod_vpl $vpl
+     * @param int $userid
+     * @param object $actiondata IDE payload with a ->files array
+     * @throws Exception if no VHDL file is found or entity cannot be parsed
+     * @return object with ->filename and ->content properties
+     */
+    public static function generate_testbench_file($vpl, $userid, $actiondata) {
+        $files = self::filesfromide($actiondata->files);
+
+        $vhdlcontent = null;
+        foreach ($files as $filename => $content) {
+            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            if (in_array($ext, ['vhd', 'vhdl', 'vh', 'v', 'sv'])) {
+                $vhdlcontent = $content;
+                break;
+            }
+        }
+        if ($vhdlcontent === null) {
+            throw new \Exception(get_string('nosubmission', 'mod_vpl'));
+        }
+
+        if (!preg_match('/entity\s+(\w+)\s+is/i', $vhdlcontent, $entitymatch)) {
+            throw new \Exception('Could not find an entity declaration in the VHDL source.');
+        }
+        $entityname = strtolower($entitymatch[1]);
+
+        $portblock = '';
+        if (preg_match('/port\s*\((.+?)\)\s*;/is', $vhdlcontent, $portmatch)) {
+            $rawports = trim($portmatch[1]);
+            $portlines = array_map(
+                function($line) { return '        ' . trim($line); },
+                explode("\n", $rawports)
+            );
+            $portblock = implode("\n", array_filter($portlines, 'trim'));
+        }
+
+        $componentports = $portblock
+            ? "        port (\n{$portblock}\n        );"
+            : '';
+
+        $tb  = "library ieee;\n";
+        $tb .= "use ieee.std_logic_1164.all;\n\n";
+        $tb .= "entity tb_{$entityname} is\n";
+        $tb .= "end entity tb_{$entityname};\n\n";
+        $tb .= "architecture sim of tb_{$entityname} is\n\n";
+        $tb .= "    component {$entityname}\n";
+        $tb .= $componentports . "\n";
+        $tb .= "    end component;\n\n";
+        $tb .= "    -- TODO: declare signal connections here.\n\n";
+        $tb .= "begin\n\n";
+        $tb .= "    uut: {$entityname}\n";
+        $tb .= "        port map (\n";
+        $tb .= "            -- TODO: connect signals here.\n";
+        $tb .= "        );\n\n";
+        $tb .= "    stimulus: process\n";
+        $tb .= "    begin\n";
+        $tb .= "        -- TODO: add stimulus here.\n";
+        $tb .= "        wait;\n";
+        $tb .= "    end process;\n\n";
+        $tb .= "end architecture sim;\n";
+
+        $response = new \stdClass();
+        $response->filename = '_tb.vhd';
+        $response->content  = $tb;
+        return $response;
     }
 
     /**
