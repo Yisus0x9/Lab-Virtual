@@ -1962,32 +1962,25 @@ var VPLIDE = function(rootId, options) {
         }
     });
     /**
-     * Requests testbench generation from the server and creates the resulting
-     * file directly in the editor without opening a terminal connection.
+     * Launches the generate testbench action
      */
     function generateTestbenchAction() {
-        var postData = {files: fileManager.getFilesToSave()};
-        VPLUI.requestAction('generate_testbench', 'generatingtestbench', postData, options.ajaxurl)
+        var data = {files: fileManager.getFilesToSave()};
+        VPLUI.requestAction('generate_testbench', 'generatingtestbench', data, options.ajaxurl)
         .done(function(response) {
-            if (response && response.content) {
-                var file = {
-                    name: response.filename || '_tb.vhd',
-                    contents: response.content,
-                    encoding: 0
-                };
-                var newfile = fileManager.addFile(file, true, updateMenu, showErrorMessage);
-                if (newfile) {
-                    fileManager.open(newfile);
-                    tabs.tabs('option', 'active', fileManager.getTabPos(newfile.getId()));
-                    newfile.focus();
-                }
-            }
+            fileManager.addFile(
+                {name: response.filename, contents: response.content, encoding: 0},
+                true,
+                updateMenu,
+                showErrorMessage
+            );
         })
         .fail(showErrorMessage);
     }
     menuButtons.add({
         name: 'generate_testbench',
         originalAction: function() {
+            executionActions.setLastAction(generateTestbenchAction);
             generateTestbenchAction();
         },
         bindKey: {

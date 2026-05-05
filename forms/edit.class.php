@@ -272,6 +272,7 @@ class mod_vpl_edit {
     }
 
     /**
+     * @Autor Jesus Peñarrieta Villa
      * Generate a VHDL testbench from the files sent by the IDE.
      *
      * Parses the first VHDL source file found in $actiondata->files,
@@ -285,27 +286,41 @@ class mod_vpl_edit {
      * @return object with ->filename and ->content properties
      */
     public static function generate_testbench_file($vpl, $userid, $actiondata) {
-        $files = self::filesfromide($actiondata->files);
+        // Collect files from the IDE POST payload when the new JS is active.
+        $files = [];
+        if (!empty($actiondata->files)) {
+            $files = self::filesfromide($actiondata->files);
+        }
 
+        // Fallback: load the last saved submission when no files were posted
+        // (old cached JS sends empty data; new JS sends files via POST).
+        if (empty($files)) {
+            $lastsub = $vpl->last_user_submission($userid);
+            if ($lastsub) {
+                $files = (new \mod_vpl_submission($vpl, $lastsub))->get_submitted_files();
+            }
+        }
+
+        // Find first VHDL source file.
         $vhdlcontent = null;
+        $vhdlexts = ['vhd', 'vhdl', 'vh', 'v', 'sv'];
         foreach ($files as $filename => $content) {
             $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-            if (in_array($ext, ['vhd', 'vhdl', 'vh', 'v', 'sv'])) {
+            if (in_array($ext, $vhdlexts)) {
                 $vhdlcontent = $content;
                 break;
             }
         }
-        if ($vhdlcontent === null) {
-            throw new \Exception(get_string('nosubmission', 'mod_vpl'));
-        }
 
-        if (!preg_match('/entity\s+(\w+)\s+is/i', $vhdlcontent, $entitymatch)) {
-            throw new \Exception('Could not find an entity declaration in the VHDL source.');
+        // Parse entity name and port block from VHDL content.
+        $entityname = 'my_entity';
+        if ($vhdlcontent !== null &&
+                preg_match('/entity\s+(\w+)\s+is/i', $vhdlcontent, $entitymatch)) {
+            $entityname = strtolower($entitymatch[1]);
         }
-        $entityname = strtolower($entitymatch[1]);
 
         $portblock = '';
-        if (preg_match('/port\s*\((.+?)\)\s*;/is', $vhdlcontent, $portmatch)) {
+        if ($vhdlcontent !== null && preg_match('/port\s*\((.+?)\)\s*;/is', $vhdlcontent, $portmatch)) {
             $rawports = trim($portmatch[1]);
             $portlines = array_map(
                 function($line) { return '        ' . trim($line); },
