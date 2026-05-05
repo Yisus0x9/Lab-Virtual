@@ -3,5 +3,56 @@
 # Default remote lab script for VPL
 # License http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-. environment.sh
-echo "No remote lab action defined for the detected file type."
+USER="${VPL_SSH_USER:-eq3arq}"
+HOST="${VPL_SSH_HOST:-148.204.59.118}"
+PASS="${VPL_SSH_PASS:-e3aam118242}"
+PORT=22
+CONNECT_TIMEOUT=8
+SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=${CONNECT_TIMEOUT} -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -o GSSAPIAuthentication=no"
+
+cat << EOF > vpl_execution
+#!/bin/bash
+
+USER="$USER"
+HOST="$HOST"
+PASS="$PASS"
+PORT="$PORT"
+CONNECT_TIMEOUT="$CONNECT_TIMEOUT"
+SSH_OPTS="$SSH_OPTS"
+
+# Verificar si sshpass está disponible
+if ! command -v sshpass &> /dev/null; then
+    echo "ERROR: sshpass no está instalado en este servidor."
+    exit 1
+fi
+
+# Verificar conectividad antes de intentar SSH
+echo "Verificando conexión con \$HOST:\$PORT..."
+if ! timeout \$CONNECT_TIMEOUT bash -c "echo > /dev/tcp/\$HOST/\$PORT" 2>/dev/null; then
+    echo "ERROR: No se puede alcanzar \$HOST:\$PORT (timeout \${CONNECT_TIMEOUT}s)."
+    echo "Verifique que el servidor esté encendido y accesible desde esta red."
+    exit 1
+fi
+echo "Conexión disponible."
+
+# Recolectar archivos VHDL en una lista antes de transferir
+FILES=()
+for f in *.vhdl *.vhd; do
+    [ -f "\$f" ] && FILES+=("\$f")
+done
+
+if [ \${#FILES[@]} -gt 0 ]; then
+    echo "Transfiriendo \${#FILES[@]} archivo(s) VHDL..."
+    sshpass -p "\$PASS" scp \$SSH_OPTS "\${FILES[@]}" "\${USER}@\${HOST}:~/" && \
+        echo "Transferencia completada." || \
+        echo "Advertencia: error al transferir algunos archivos."
+else
+    echo "No se encontraron archivos .vhdl/.vhd para transferir."
+fi
+
+# Iniciar sesión SSH interactiva
+echo "Conectando a \$HOST..."
+sshpass -p "\$PASS" ssh -t \$SSH_OPTS "\${USER}@\${HOST}"
+EOF
+
+chmod +x vpl_execution

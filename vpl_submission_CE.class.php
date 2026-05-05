@@ -898,12 +898,15 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
         $options = (array) $options;
         $plugincfg = get_config('mod_vpl');
         $data = $this->prepare_execution($type);
-        $data->interactive = $type < self::TEVALUATE ? 1 : 0;
+        $data->interactive = ($type < self::TEVALUATE || $type === self::TREMOTELAB) ? 1 : 0;
         $data->lang = vpl_get_lang();
         $optionsvars = [
             'XGEOMETRY' => 'VPL_XGEOMETRY',
             'currentFileName' => 'VPL_CURRENTSUBFILE',
             'COMMANDARGS' => 'VPL_COMMANDARGS',
+            'SSH_HOST' => 'VPL_SSH_HOST',
+            'SSH_USER' => 'VPL_SSH_USER',
+            'SSH_PASS' => 'VPL_SSH_PASS',
         ];
         $enviromentvars = '';
         foreach ($optionsvars as $option => $varname) {

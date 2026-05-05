@@ -1282,6 +1282,30 @@ var VPLIDE = function(rootId, options) {
     }));
     VPLUI.setDialogTitleIcon(dialogNew, 'new');
 
+    var dialogRemoteLab = $('#vpl_ide_dialog_remote_lab');
+    function remoteLabConnectHandler(event) {
+        if (!(event.type == 'click' || ((event.type == 'keypress') && event.keyCode == 13))) {
+            return true;
+        }
+        dialogRemoteLab.dialog('close');
+        executionRequest('remote_lab', 'remotelabbing', {
+            SSH_HOST: $('#vpl_ide_input_ssh_host').val(),
+            SSH_USER: $('#vpl_ide_input_ssh_user').val(),
+            SSH_PASS: $('#vpl_ide_input_ssh_pass').val(),
+        });
+    }
+    var dialogRemoteLabButtons = {};
+    dialogRemoteLabButtons[str('connect')] = remoteLabConnectHandler;
+    dialogRemoteLabButtons[str('cancel')] = function() {
+        $(this).dialog('close');
+    };
+    dialogRemoteLab.find('input').on('keypress', remoteLabConnectHandler);
+    dialogRemoteLab.dialog($.extend({}, dialogbaseOptions, {
+        title: str('remote_lab'),
+        buttons: dialogRemoteLabButtons
+    }));
+    VPLUI.setDialogTitleIcon(dialogRemoteLab, 'remote_lab');
+
     var dialogRename = $('#vpl_ide_dialog_rename');
     /**
      * The event handler for the rename current file action
@@ -1948,7 +1972,8 @@ var VPLIDE = function(rootId, options) {
      * Launches the remote lab action
      */
     function remoteLabAction() {
-        executionRequest('remote_lab', 'remotelabbing');
+        $('#vpl_ide_input_ssh_pass').val('');
+        dialogRemoteLab.dialog('open');
     }
     menuButtons.add({
         name: 'remote_lab',
@@ -1961,19 +1986,24 @@ var VPLIDE = function(rootId, options) {
             mac: 'Command-F9'
         }
     });
+
     /**
+     * @author Jesus Peñarrieta Villa
      * Launches the generate testbench action
      */
     function generateTestbenchAction() {
         var data = {files: fileManager.getFilesToSave()};
         VPLUI.requestAction('generate_testbench', 'generatingtestbench', data, options.ajaxurl)
         .done(function(response) {
-            fileManager.addFile(
+            var newfile = fileManager.addFile(
                 {name: response.filename, contents: response.content, encoding: 0},
                 true,
                 updateMenu,
                 showErrorMessage
             );
+            if (newfile) {
+                fileManager.open(newfile);
+            }
         })
         .fail(showErrorMessage);
     }

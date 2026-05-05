@@ -127,6 +127,9 @@ class vpl_editor_util {
         $newfilename = s(get_string('new_file_name', VPL));
         $rename = s(get_string('rename'));
         $comments = s(get_string('comments', VPL));
+        $remotehost = s(get_string('remote_lab_host', VPL));
+        $remoteuser = s(get_string('remote_lab_user', VPL));
+        $remotepass = s(get_string('remote_lab_pass', VPL));
 
         $html = <<<"HTML"
 <div id="$tagid" class="vpl_ide vpl_ide_root">
@@ -156,6 +159,23 @@ class vpl_editor_util {
                 type="text" id="vpl_ide_input_newfilename"
                 name="vpl_ide_input_newfilename" value=""
                 class="ui-widget-content ui-corner-all" autofocus /><br>
+        </fieldset>
+    </div>
+    <div id="vpl_ide_dialog_remote_lab" class="vpl_ide_dialog"
+        style="display: none;">
+        <fieldset style="border:none;padding:0">
+            <label for="vpl_ide_input_ssh_host">$remotehost</label><br>
+            <input type="text" id="vpl_ide_input_ssh_host"
+                value="" class="ui-widget-content ui-corner-all"
+                style="width:100%;margin-bottom:8px" /><br>
+            <label for="vpl_ide_input_ssh_user">$remoteuser</label><br>
+            <input type="text" id="vpl_ide_input_ssh_user"
+                value="" class="ui-widget-content ui-corner-all"
+                style="width:100%;margin-bottom:8px" autocomplete="username" /><br>
+            <label for="vpl_ide_input_ssh_pass">$remotepass</label><br>
+            <input type="password" id="vpl_ide_input_ssh_pass"
+                value="" class="ui-widget-content ui-corner-all"
+                style="width:100%" autocomplete="current-password" />
         </fieldset>
     </div>
     <div id="vpl_ide_dialog_renamedir" class="vpl_ide_dialog"
@@ -402,6 +422,11 @@ HTML;
                 'removebreakpoint',
                 'maxpostsizeexceeded',
                 'showparentfiles',
+                'remote_lab',
+                'remote_lab_host',
+                'remote_lab_user',
+                'remote_lab_pass',
+                'connect',
         ];
         $words = [
                 'cancel',
