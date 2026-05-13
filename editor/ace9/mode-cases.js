@@ -132,6 +132,18 @@ ace.define("ace/mode/cases_highlight_rules", [ "require", "exports", "module", "
                     next: "start",
                 },
             ];
+            var timeValue = [
+                {
+                    token: "constant.numeric",
+                    regex: "[ \\t]*[0-9]+(?:\\.[0-9]+)?[ \\t]*(?:ns|us|ms|s)[ \\t]*(#.*)?$",
+                    next: "start",
+                },
+                {
+                    token: "invalid.illegal",
+                    regex: ".*$",
+                    next: "start",
+                },
+            ];
             var lineEndParameter = [
                 {
                     token: "string",
@@ -185,6 +197,30 @@ ace.define("ace/mode/cases_highlight_rules", [ "require", "exports", "module", "
                     token: "variable",
                     regex: regexParameter("time limit"),
                     next: floatValue,
+                },
+                {
+                    caseInsensitive: true,
+                    token: "variable",
+                    regex: regexParameters(["stop_time_all", "stop_time", "clock_period"]),
+                    next: timeValue,
+                },
+                {
+                    caseInsensitive: true,
+                    token: "variable",
+                    regex: regexParameters(["clock", "reset", "reset_type"]),
+                    next: lineTextValue,
+                },
+                {
+                    caseInsensitive: true,
+                    token: "variable",
+                    regex: regexParameters(["reset_active", "reset_cycles"]),
+                    next: lineTextValue,
+                },
+                {
+                    caseInsensitive: true,
+                    token: "variable",
+                    regex: "^[ \\t]*(input|output)[ \\t]*:[ \\t]*$",
+                    next: "signalSection",
                 },
                 {
                     caseInsensitive: true,
@@ -263,6 +299,27 @@ ace.define("ace/mode/cases_highlight_rules", [ "require", "exports", "module", "
                         base,
                         {
                             token: "string",
+                            regex: ".*$",
+                        },
+                    ],
+                    "signalSection": [
+                        base,
+                        {
+                            caseInsensitive: true,
+                            token: "comment",
+                            regex: "^[ \\t]*#.*$",
+                        },
+                        {
+                            caseInsensitive: true,
+                            token: "string",
+                            regex: "^[ \\t]+[a-zA-Z_][a-zA-Z0-9_]*[ \\t]*=[ \\t]*[^\\n]*$",
+                        },
+                        {
+                            token: "text",
+                            regex: "^[ \\t]*$",
+                        },
+                        {
+                            token: "invalid.illegal",
                             regex: ".*$",
                         },
                     ],

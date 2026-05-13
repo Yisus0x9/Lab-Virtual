@@ -42,10 +42,10 @@
 set -o pipefail
 . common_script.sh
 
-log_info()    { echo "INFO:=>  $*"; }
-log_error()   { echo "ERROR:=> $*"; }
-log_success() { echo "SUCCESS:> $*"; }
-log_warn()    { echo "WARN:=>  $*"; }
+log_info()    { echo "-INFO:=>  $*"; }
+log_error()   { echo "-ERROR:=> $*"; }
+log_success() { echo "-SUCCESS:> $*"; }
+log_warn()    { echo "-WARN:=>  $*"; }
 
 # Helper: escribe un vpl_execution válido (script bash) con grade mínimo y mensaje
 fail_with_min_grade() {

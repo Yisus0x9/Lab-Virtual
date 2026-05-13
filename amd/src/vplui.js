@@ -237,10 +237,10 @@ VPLUI.iconFolder = function() {
         'running': 'rocket fa-spin',
         'debug': 'bug',
         'evaluate': 'check-square-o',
-        'remote_lab': 'server',
-        'remotelabbing': 'server fa-spin',
-        'generate_testbench': 'flask',
-        'generatingtestbench': 'flask fa-spin',
+        'remote_lab': '@fa-solid fa-microchip',
+        'remotelabbing': '@fa-solid fa-microchip fa-spin',
+        'generate_testbench': '@fa-brands fa-centercode',
+        'generatingtestbench': '@fa-brands fa-centercode fa-spin',
         'console': 'terminal',
         'about': 'question',
         'info': 'info-circle',
@@ -277,7 +277,11 @@ VPLUI.iconFolder = function() {
         var icons = menuIcons[icon].split('|');
         var ret = '';
         for (var i = 0; i < icons.length; i++) {
-            ret += "<i class='" + classes + ' fa-' + icons[i] + "'></i>";
+            if (icons[i].charAt(0) === '@') {
+                ret += "<i class='" + icons[i].substring(1) + "'></i>";
+            } else {
+                ret += "<i class='" + classes + ' fa-' + icons[i] + "'></i>";
+            }
         }
         return ret;
     };

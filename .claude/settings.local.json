@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\editor\\\\\\\\ace9\\\\\\\\\" 2>/dev/null | head -20)",
+      "Read(///wsl.localhost/Ubuntu/var/www/html/moodle/mod/vpl/editor/**)",
+      "Bash(ls \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\editor\\\\\\\\ace9\\\\\\\\\" 2>/dev/null | grep -i cases)",
+      "Bash(grep -r \"mode-cases\\\\|cases_highlight\\\\|loadAce\\\\|ace9\" \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\\" --include=\"*.js\" --include=\"*.php\" -l 2>/dev/null | grep -v \"ace9\" | head -20)",
+      "Read(///wsl.localhost/Ubuntu/var/www/html/moodle/mod/**)",
+      "Bash(diff \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\editor\\\\\\\\ace9\\\\\\\\mode-cases.js\" \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\thirdpartylibs\\\\\\\\ace\\\\\\\\mode-cases.js\" | head -40)",
+      "Read(///wsl.localhost/Ubuntu/var/www/html/moodle/mod/vpl/editor/ace9/**)",
+      "Bash(cp \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\editor\\\\\\\\ace9\\\\\\\\mode-cases.js\" \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\thirdpartylibs\\\\\\\\ace\\\\\\\\mode-cases.js\")",
+      "Bash(diff \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\editor\\\\\\\\ace9\\\\\\\\mode-cases.js\" \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\thirdpartylibs\\\\\\\\ace\\\\\\\\mode-cases.js\")",
+      "Bash(grep -rl \"Comment\\\\s*:=>\" \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\\" 2>/dev/null | head -10)",
+      "Bash(grep -n \"Comment\\\\|SUCCESS\\\\|INFO\\\\|ERROR\\\\|:=>\" \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\vpl_submission.class.php\" | head -30)",
+      "Read(///wsl.localhost/Ubuntu/var/www/html/moodle/mod/vpl/**)",
+      "Bash(grep -n \"compilation\\\\|compile\\\\|result\\\\|message\\\\|Comment\\\\|SUCCESS\\\\|INFO\" \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\amd\\\\\\\\src\\\\\\\\vplide.js\" | grep -i \"html\\\\|class\\\\|style\\\\|render\\\\|display\\\\|show\\\\|append\\\\|text\" | head -30)",
+      "Read(///wsl.localhost/Ubuntu/var/www/html/moodle/mod/vpl/amd/src/**)",
+      "Bash(grep -n \"compilation\\\\|compile_output\\\\|getResult\\\\|processResult\\\\|showResult\\\\|htmlEncode\\\\|compilation_execution\" \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\amd\\\\\\\\src\\\\\\\\vplide.js\" | head -30)",
+      "Bash(grep -n \"processResult\\\\|htmlEncode\\\\|Comment\\\\|SUCCESS\\\\|INFO\\\\|class.*vpl\" \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\amd\\\\\\\\src\\\\\\\\vplutil.js\" | head -50)"
+    ],
+    "additionalDirectories": [
+      "\\\\wsl.localhost\\Ubuntu\\var\\www\\html\\moodle\\mod\\vpl\\editor\\ace9"
+    ]
+  }
+}
