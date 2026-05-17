@@ -728,6 +728,9 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
         $data->files['vpl_environment.sh'] = $enviromentcontent;
         // Add common script.
         $data->files['common_script.sh'] = file_get_contents(vpl_get_scripts_dir() . '/common_script.sh');
+        // @Author jesus peñarrieta Villa - Add common script for evaluator
+        $data->files['vpl_vhdl_lib.sh'] = file_get_contents(vpl_get_scripts_dir() . '/vpl_vhdl_lib.sh');
+
         // Add new script for evaluation mode test_in_gui if needed.
         if (isset($varsenv['VPL_EVALUATION_MODE']) &&  $varsenv['VPL_EVALUATION_MODE'] == '2') {
             $filename = vpl_get_scripts_dir() . '/default_evaluate_textingui.sh';
