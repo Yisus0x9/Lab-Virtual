@@ -1,8 +1,8 @@
 #!/bin/bash
 # Logs para ver en la terminal de texto de vpl
-log_info()    { echo "SUCCESS:=> $*"; }
-log_error()   { echo "ERROR:=> $*"; }
-log_success() { echo "Comment :=>>$*"; }
+log_info()    { echo "-SUCCESS:=> $*"; }
+log_error()   { echo "-ERROR:=> $*"; }
+log_success() { echo "-Comment :=>>$*"; }
 
 . common_script.sh
 

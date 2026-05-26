@@ -6,13 +6,11 @@
 # Author Jesus Peñarrieta Villa
 
 # Logs para ver en la terminal de texto de vpl
-log_info()    { echo "SUCCESS:=> $*"; }
-log_error()   { echo "ERROR:=> $*"; }
-log_success() { echo "Comment :=>>$*"; }
+log_info()    { echo "-INFO:=>  $*"; }
+log_error()   { echo "-ERROR:=> $*"; }
+log_success() { echo "-SUCCESS:> $*"; }
 
 . common_script.sh
-
-log_info "Buscando archivos fuente..."
 
 get_source_files v sv vh NOERROR
 if [ "$?" != "0" ]; then
@@ -23,8 +21,6 @@ if [ -z "$SOURCE_FILES" ]; then
     log_error "No se encontraron archivos fuente."
     exit 1
 fi
-
-log_success "Archivos encontrados."
 
 # Compilar archivos
 SAVEIFS=$IFS

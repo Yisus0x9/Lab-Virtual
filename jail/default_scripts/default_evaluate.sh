@@ -38,7 +38,6 @@
 #   output:
 #       Z2 = [_, _, _, 1, _, _]      # _ = no verificar este ciclo
 # ============================================================================
-echo $(ls)
 set -o pipefail
 . common_script.sh
 . vpl_vhdl_lib.sh
@@ -81,7 +80,6 @@ TOTAL_CASES=0
 # ============================================================================
 # PASO 1: COMPILAR FUENTES DEL ALUMNO
 # ============================================================================
-log_info "==== PASO 1: COMPILACIÓN ===="
 ./vpl_run.sh
 if [ $? -ne 0 ]; then
     log_error "Falló la compilación del código del alumno."
@@ -105,9 +103,16 @@ fi
 # ============================================================================
 # PASO 2: DETECTAR TOP ENTITY
 # ============================================================================
-log_info "==== PASO 2: TOP ENTITY ===="
-get_source_files vhdl vhd
+get_source_files vhdl vhd NOERROR
 export TERM=dumb
+
+# Verificar que existen archivos VHDL antes de continuar
+if [ -z "$SOURCE_FILES" ]; then
+    fail_with_min_grade "No se encontraron archivos VHDL (.vhd/.vhdl) en la entrega.
+El alumno debe subir al menos un archivo con la entidad a evaluar."
+    exit 1
+fi
+
 get_first_source_file vhdl vhd
 TOP_ENTITY=""
 for SF in $SOURCE_FILES; do
@@ -121,7 +126,6 @@ if [ -z "$TOP_ENTITY" ]; then
 fi
 log_success "Top entity: $TOP_ENTITY"
 
-get_source_files vhd vhdl NOERROR
 TOP_FILE=""
 SAVEIFS=$IFS; IFS=$'\n'
 for F in $SOURCE_FILES; do
@@ -130,14 +134,16 @@ for F in $SOURCE_FILES; do
     fi
 done
 IFS=$SAVEIFS
-[ -z "$TOP_FILE" ] && { log_error "No se encontró archivo de $TOP_ENTITY"; fail_with_min_grade ""; exit 1; }
+if [ -z "$TOP_FILE" ]; then
+    # Fallback: usar el primer archivo disponible
+    TOP_FILE=$(echo "$SOURCE_FILES" | head -1)
+    log_warn "Entidad '$TOP_ENTITY' no encontrada explícitamente. Usando: $TOP_FILE"
+fi
 log_info "Archivo top: $TOP_FILE"
 
 # ============================================================================
 # PASO 3: EXTRAER PUERTOS
 # ============================================================================
-log_info "==== PASO 3: PUERTOS ===="
-
 block=$(extract_port_block "$TOP_ENTITY" "$TOP_FILE")
 [ -z "$block" ] && { log_error "No se pudo extraer port() de $TOP_ENTITY"; fail_with_min_grade ""; exit 1; }
 
@@ -145,7 +151,6 @@ GENERIC_BLOCK=$(extract_generic_block "$TOP_ENTITY" "$TOP_FILE")
 declare -A GENERIC_VALUES
 GENERIC_HAS_DEFAULT=true
 if [ -n "$GENERIC_BLOCK" ]; then
-    log_info "Generics detectados, extrayendo..."
     while IFS= read -r decl; do
         decl=$(echo "$decl" | sed 's/--[^"]*$//' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
         [ -z "$decl" ] && continue
@@ -169,7 +174,6 @@ while IFS='|' read -r nm dir type; do
     PORT_TYPE[$nm_lower]="$type_resolved"
     PORT_ORIG[$nm_lower]="$nm"
     PORT_ORDER+=("$nm_lower")
-    log_info "  $nm : $dir $type_resolved"
 done < <(parse_ports "$block")
 
 [ ${#PORT_DIR[@]} -eq 0 ] && { log_error "0 puertos extraídos"; fail_with_min_grade ""; exit 1; }
@@ -178,8 +182,6 @@ log_success "${#PORT_DIR[@]} puertos extraídos"
 # ============================================================================
 # PASO 4: DETECTAR CLOCK Y RESET, CARGAR CONFIG GLOBAL
 # ============================================================================
-log_info "==== PASO 4: CONFIGURACIÓN ===="
-
 v=$(read_global_kv "stop_time_all");     [ -n "$v" ] && SIMULATION_STOP_TIME="$v"
 v=$(read_global_kv "clock");             [ -n "$v" ] && CLK_SIGNAL="$v"
 v=$(read_global_kv "clock_period");      [ -n "$v" ] && CLK_PERIOD="$v"
@@ -230,20 +232,11 @@ if [ -n "$RESET_SIGNAL" ]; then
     fi
 fi
 
-log_info "Modo:           $EVAL_MODE"
-log_info "Clock:          ${CLK_SIGNAL:-<ninguno>}"
-log_info "Clock period:   $CLK_PERIOD"
-log_info "Reset:          ${RESET_SIGNAL:-<ninguno>}"
-log_info "Reset active:   $RESET_ACTIVE ($([ "$RESET_ACTIVE" = "1" ] && echo high || echo low))"
-log_info "Reset type:     $RESET_TYPE"
-log_info "Reset cycles:   $RESET_CYCLES"
-log_info "Stop sim:       $SIMULATION_STOP_TIME"
+log_info "Modo: $EVAL_MODE | Clock: ${CLK_SIGNAL:-<ninguno>} | Reset: ${RESET_SIGNAL:-<ninguno>} | Stop: $SIMULATION_STOP_TIME"
 
 # ============================================================================
 # PASO 5: PARSEAR CASOS
 # ============================================================================
-log_info "==== PASO 5: CASOS ===="
-
 current_case=""
 current_stop=""
 current_grade=""
@@ -328,16 +321,12 @@ clk_lower=""; rst_lower=""
 # ============================================================================
 # PASO 7: GENERAR TESTBENCH
 # ============================================================================
-log_info "==== PASO 7: TESTBENCH ===="
 generate_testbench "$GENERATED_TB"
 [ $? -ne 0 ] && { log_error "Falló generación de TB"; fail_with_min_grade ""; exit 1; }
-log_success "TB generado: $GENERATED_TB"
 
 # ============================================================================
 # PASO 8: COMPILAR Y SIMULAR
 # ============================================================================
-log_info "==== PASO 8: COMPILACIÓN+SIMULACIÓN ===="
-
 ghdl -a --std=08 "$GENERATED_TB" 2>&1
 [ $? -ne 0 ] && { log_error "Error compilando TB"; cat "$GENERATED_TB" | head -80; fail_with_min_grade ""; exit 1; }
 
@@ -351,8 +340,6 @@ SIM_OUTPUT=$(ghdl -r --std=08 "$TB_ENTITY" --stop-time="$SIM_STOP_NOSPACE" 2>&1)
 # ============================================================================
 # PASO 9: EVALUAR RESULTADOS
 # ============================================================================
-log_info "==== PASO 9: EVALUACIÓN ===="
-
 grade=$GRADE_MAX
 comments=""
 passed=0; failed=0

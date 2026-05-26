@@ -30,7 +30,6 @@ fi
 # ============================================================================
 # FASE 1: COMPILAR FUENTES
 # ============================================================================
-log_info "Compilando archivos fuente..."
 ./vpl_run.sh
 if [ $? -ne 0 ]; then
     log_error "Falló la compilación de archivos fuente."
@@ -40,8 +39,6 @@ fi
 # ============================================================================
 # FASE 2: DETECTAR ARCHIVOS VHDL
 # ============================================================================
-log_info "Buscando archivos .vhd y .vhdl..."
-
 declare -a ALL_VHDL_FILES
 declare -a TESTBENCH_FILES
 SOURCE_FILES=()
@@ -107,7 +104,6 @@ is_testbench() {
 # ============================================================================
 # CLASIFICAR ARCHIVOS
 # ============================================================================
-log_info "Clasificando archivos..."
 for file in "${ALL_VHDL_FILES[@]}"; do
     if is_testbench "$file"; then
         TESTBENCH_FILES+=("$file")
@@ -182,7 +178,6 @@ for TB_FILE in "${TESTBENCH_FILES[@]}"; do
     else
         # Usar parámetro de línea de comandos o default
         TB_STOP_TIME="${2:-1ms}"
-        log_info "Stop time (por defecto): $TB_STOP_TIME"
         log_debug "   Ningún stime-stop en el archivo"
     fi
     
@@ -201,8 +196,6 @@ for TB_FILE in "${TESTBENCH_FILES[@]}"; do
     # ========================================================================
     # COMPILAR DEPENDENCIAS
     # ========================================================================
-    log_info "Buscando y compilando dependencias..."
-    
     dep_count=0
     for src_file in "${SOURCE_FILES[@]}"; do
         log_debug "Analizando dependencias en: $src_file"
@@ -218,7 +211,6 @@ for TB_FILE in "${TESTBENCH_FILES[@]}"; do
                 ghdl -a --std=08 "$src_file" 2>&1 | sed 's/^/      [GHDL] /'
                 
                 if [ ${PIPESTATUS[0]} -eq 0 ]; then
-                    log_success "     Compilado correctamente"
                     dep_count=$((dep_count+1))
                 else
                     log_error "     Error de compilación"
@@ -239,7 +231,6 @@ for TB_FILE in "${TESTBENCH_FILES[@]}"; do
         log_error "Error en análisis de $TB_FILE"
         continue
     fi
-    log_success " Análisis OK"
     
     # ========================================================================
     # ELABORAR
@@ -251,7 +242,6 @@ for TB_FILE in "${TESTBENCH_FILES[@]}"; do
         log_error "Error en elaboración de $TESTBENCH_NAME"
         continue
     fi
-    log_success " Elaboración OK"
     
     # ========================================================================
     # SIMULAR
@@ -259,8 +249,7 @@ for TB_FILE in "${TESTBENCH_FILES[@]}"; do
     GHW_FILE="${TESTBENCH_NAME}.ghw"
     
     log_info "Simulando: $TESTBENCH_NAME"
-    log_info "  Comando: ghdl -r --std=08 \"$TESTBENCH_NAME\" --vcd=\"$GHW_FILE\" --stop-time=\"$TB_STOP_TIME\""
-    
+
     ghdl -r --std=08 "$TESTBENCH_NAME" --wave="$GHW_FILE" --stop-time="$TB_STOP_TIME" 2>&1 | sed 's/^/  [GHDL] /'
     
     if [ ${PIPESTATUS[0]} -ne 0 ]; then
@@ -295,8 +284,6 @@ log_success "Se generaron ${#GHW_FILES[@]} archivo(s) VCD"
 # GENERAR PROYECTO GTKWAVE
 # ============================================================================
 GTKW_FILE="simulacion.gtkw"
-log_info "Generando proyecto GTKWave: $GTKW_FILE"
-
 {
     echo "[*] Proyecto GTKWave generado automáticamente"
     echo "[*] Fecha: $(date)"

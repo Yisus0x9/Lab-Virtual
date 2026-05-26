@@ -1283,15 +1283,28 @@ var VPLIDE = function(rootId, options) {
     VPLUI.setDialogTitleIcon(dialogNew, 'new');
 
     var dialogRemoteLab = $('#vpl_ide_dialog_remote_lab');
+    /*
+     * @author Jesus Peñarrieta Villa
+     * The event handler for the remote lab connect action
+     * @param {Object} event
+     * @return {boolean}
+    */
     function remoteLabConnectHandler(event) {
         if (!(event.type == 'click' || ((event.type == 'keypress') && event.keyCode == 13))) {
             return true;
         }
+        var host = $('#vpl_ide_input_ssh_host').val().trim();
+        var user = $('#vpl_ide_input_ssh_user').val().trim();
+        var pass = $('#vpl_ide_input_ssh_pass').val();
+        if (!host || !user || !pass) {
+            showErrorMessage(str('remote_lab_fields_required'));
+            return false;
+        }
         dialogRemoteLab.dialog('close');
         executionRequest('remote_lab', 'remotelabbing', {
-            SSH_HOST: $('#vpl_ide_input_ssh_host').val(),
-            SSH_USER: $('#vpl_ide_input_ssh_user').val(),
-            SSH_PASS: $('#vpl_ide_input_ssh_pass').val(),
+            SSH_HOST: host,
+            SSH_USER: user,
+            SSH_PASS: pass,
         });
     }
     var dialogRemoteLabButtons = {};
@@ -1952,6 +1965,7 @@ var VPLIDE = function(rootId, options) {
         }
     });
     /**
+     * 
      * Launches the evaluate action
      */
     function evaluateAction() {
@@ -1968,7 +1982,9 @@ var VPLIDE = function(rootId, options) {
             mac: 'Command-Option-U'
         }
     });
+
     /**
+     * @Author Jesus Peñarrieta Villa
      * Launches the remote lab action
      */
     function remoteLabAction() {

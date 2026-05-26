@@ -119,6 +119,7 @@ class vpl_editor_util {
     }
 
     /**
+     * @Author Jesus Peñarrieta Villa
      * Prints the HTML tag for the VPL IDE.
      */
     public static function print_tag() {
@@ -426,6 +427,7 @@ HTML;
                 'remote_lab_host',
                 'remote_lab_user',
                 'remote_lab_pass',
+                'remote_lab_fields_required',
                 'connect',
         ];
         $words = [

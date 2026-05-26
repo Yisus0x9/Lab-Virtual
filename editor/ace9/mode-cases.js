@@ -3,6 +3,7 @@
  * @copyright 2021 Juan Carlos Rodríguez-del-Pino
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @author Juan Carlos Rodríguez-del-Pino <jcrodriguez@dis.ulpgc.es>
+ * Modified by Jesus Peñarrieta Villa 
  */
 
 ace.define("ace/mode/cases_highlight_rules", [ "require", "exports", "module", "ace/lib/oop", "ace/mode/text_highlight_rules" ],

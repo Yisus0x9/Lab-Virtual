@@ -272,7 +272,7 @@ class mod_vpl_edit {
     }
 
     /**
-     * @Autor Jesus Peñarrieta Villa
+     * @Author Jesus Peñarrieta Villa
      * Generate a VHDL testbench from the files sent by the IDE.
      *
      * Parses the first VHDL source file found in $actiondata->files,
@@ -301,61 +301,216 @@ class mod_vpl_edit {
             }
         }
 
-        // Find first VHDL source file.
+        // Find first VHDL/HDL source file among student files.
         $vhdlcontent = null;
+        $vhdlfilename = null;
         $vhdlexts = ['vhd', 'vhdl', 'vh', 'v', 'sv'];
         foreach ($files as $filename => $content) {
             $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
             if (in_array($ext, $vhdlexts)) {
                 $vhdlcontent = $content;
+                $vhdlfilename = $filename;
                 break;
             }
         }
 
-        // Parse entity name and port block from VHDL content.
-        $entityname = 'my_entity';
-        if ($vhdlcontent !== null &&
-                preg_match('/entity\s+(\w+)\s+is/i', $vhdlcontent, $entitymatch)) {
+        if ($vhdlcontent === null) {
+            throw new \Exception(get_string('novhdlfilesfortestbench', VPL));
+        }
+        if (trim($vhdlcontent) === '') {
+            throw new \Exception(get_string('emptyvhdlfilefortestbench', VPL, $vhdlfilename));
+        }
+
+        // Parse entity name — fallback to filename without extension.
+        $entityname = strtolower(pathinfo($vhdlfilename, PATHINFO_FILENAME));
+        if (preg_match('/entity\s+(\w+)\s+is/i', $vhdlcontent, $entitymatch)) {
             $entityname = strtolower($entitymatch[1]);
         }
 
-        $portblock = '';
-        if ($vhdlcontent !== null && preg_match('/port\s*\((.+?)\)\s*;/is', $vhdlcontent, $portmatch)) {
-            $rawports = trim($portmatch[1]);
-            $portlines = array_map(
-                function($line) { return '        ' . trim($line); },
-                explode("\n", $rawports)
-            );
-            $portblock = implode("\n", array_filter($portlines, 'trim'));
+        // Output filename: <source_basename>_tb.vhd
+        $sourcebase = pathinfo($vhdlfilename, PATHINFO_FILENAME);
+        $tbfilename = $sourcebase . '_tb.vhd';
+
+        // Extract port block (handles nested parentheses).
+        $ports = [];
+        if (preg_match('/\bport\s*\(/is', $vhdlcontent, $pm, PREG_OFFSET_CAPTURE)) {
+            $start = $pm[0][1] + strlen($pm[0][0]);
+            $depth = 1;
+            $end = $start;
+            $len = strlen($vhdlcontent);
+            while ($end < $len && $depth > 0) {
+                $ch = $vhdlcontent[$end];
+                if ($ch === '(') {
+                    $depth++;
+                } else if ($ch === ')') {
+                    $depth--;
+                }
+                $end++;
+            }
+            $rawportblock = substr($vhdlcontent, $start, $end - $start - 1);
+            // Remove VHDL line comments.
+            $rawportblock = preg_replace('/--[^\n]*/', '', $rawportblock);
+            // Parse each semicolon-separated declaration.
+            foreach (explode(';', $rawportblock) as $decl) {
+                $decl = trim($decl);
+                if ($decl === '') {
+                    continue;
+                }
+                // Match: name[, name]* : [in|out|inout|buffer] type [:= default]
+                if (!preg_match('/^([^:]+):\s*(in|out|inout|buffer)\s+(.+?)(?::=.*)?$/is', $decl, $dm)) {
+                    continue;
+                }
+                $dir  = strtolower(trim($dm[2]));
+                $type = trim(preg_replace('/:=.*$/s', '', trim($dm[3])));
+                foreach (array_filter(array_map('trim', explode(',', $dm[1]))) as $pname) {
+                    $ports[] = ['name' => $pname, 'dir' => $dir, 'type' => $type];
+                }
+            }
         }
 
-        $componentports = $portblock
-            ? "        port (\n{$portblock}\n        );"
-            : '';
+        // Detect clock port: name matches clk/clock/ck* and direction is in and type is std_logic.
+        $clkname = null;
+        foreach ($ports as $p) {
+            $nl = strtolower($p['name']);
+            $tl = strtolower($p['type']);
+            if ($p['dir'] === 'in' && $tl === 'std_logic'
+                    && ($nl === 'clk' || $nl === 'clock' || $nl === 'ck'
+                        || strpos($nl, 'clk') !== false || strpos($nl, 'clock') !== false)) {
+                $clkname = $p['name'];
+                break;
+            }
+        }
+        $hasclock = $clkname !== null;
 
+        // Detect reset port.
+        $rstname = null;
+        foreach ($ports as $p) {
+            $nl = strtolower($p['name']);
+            if ($p['dir'] === 'in' && strtolower($p['type']) === 'std_logic'
+                    && ($nl === 'rst' || $nl === 'reset' || $nl === 'rst_n'
+                        || $nl === 'reset_n' || $nl === 'clr' || $nl === 'clear')) {
+                $rstname = $p['name'];
+                break;
+            }
+        }
+
+        // Initial value helper.
+        $initval = function(string $type): string {
+            $tl = strtolower($type);
+            if ($tl === 'std_logic') {
+                return " := '0'";
+            }
+            if (preg_match('/\bvector\b|\bunsigned\b|\bsigned\b/i', $type)) {
+                return ' := (others => \'0\')';
+            }
+            if (preg_match('/\binteger\b|\bnatural\b|\bpositive\b/i', $type)) {
+                return ' := 0';
+            }
+            if (preg_match('/\bboolean\b/i', $type)) {
+                return ' := false';
+            }
+            return '';
+        };
+
+        // Column width for alignment.
+        $maxlen = 0;
+        foreach ($ports as $p) {
+            $maxlen = max($maxlen, strlen($p['name']));
+        }
+        $pad = function(string $s) use ($maxlen): string {
+            return str_pad($s, $maxlen);
+        };
+
+        // ---- Build testbench ----
         $tb  = "library ieee;\n";
-        $tb .= "use ieee.std_logic_1164.all;\n\n";
-        $tb .= "entity tb_{$entityname} is\n";
-        $tb .= "end entity tb_{$entityname};\n\n";
-        $tb .= "architecture sim of tb_{$entityname} is\n\n";
-        $tb .= "    component {$entityname}\n";
-        $tb .= $componentports . "\n";
-        $tb .= "    end component;\n\n";
-        $tb .= "    -- TODO: declare signal connections here.\n\n";
+        $tb .= "use ieee.std_logic_1164.all;\n";
+        $tb .= "use ieee.numeric_std.all;\n\n";
+        $tb .= "entity {$entityname}_tb is\n";
+        $tb .= "end entity {$entityname}_tb;\n\n";
+        $tb .= "architecture sim of {$entityname}_tb is\n\n";
+
+        // Component declaration.
+        $tb .= "    component {$entityname} is\n";
+        if (!empty($ports)) {
+            $tb .= "        port (\n";
+            $last = count($ports) - 1;
+            foreach ($ports as $idx => $p) {
+                $sep = ($idx < $last) ? ';' : '';
+                $tb .= "            {$pad($p['name'])} : {$p['dir']} {$p['type']}{$sep}\n";
+            }
+            $tb .= "        );\n";
+        }
+        $tb .= "    end component {$entityname};\n\n";
+
+        // Clock period constant.
+        if ($hasclock) {
+            $tb .= "    constant CLK_PERIOD : time := 10 ns;\n\n";
+        }
+
+        // Signal declarations.
+        if (!empty($ports)) {
+            $tb .= "    -- DUT signals\n";
+            foreach ($ports as $p) {
+                $init = ($p['dir'] !== 'out') ? $initval($p['type']) : '';
+                $tb .= "    signal {$pad($p['name'])} : {$p['type']}{$init};\n";
+            }
+            $tb .= "\n";
+        }
+
         $tb .= "begin\n\n";
-        $tb .= "    uut: {$entityname}\n";
-        $tb .= "        port map (\n";
-        $tb .= "            -- TODO: connect signals here.\n";
-        $tb .= "        );\n\n";
-        $tb .= "    stimulus: process\n";
+
+        // DUT instantiation.
+        $tb .= "    uut : component {$entityname}\n";
+        if (!empty($ports)) {
+            $tb .= "        port map (\n";
+            $last = count($ports) - 1;
+            foreach ($ports as $idx => $p) {
+                $sep = ($idx < $last) ? ',' : '';
+                $tb .= "            {$pad($p['name'])} => {$p['name']}{$sep}\n";
+            }
+            $tb .= "        );\n";
+        }
+        $tb .= "\n";
+
+        // Clock generation process.
+        if ($hasclock) {
+            $tb .= "    clk_gen : process is\n";
+            $tb .= "    begin\n";
+            $tb .= "        {$clkname} <= '0';\n";
+            $tb .= "        wait for CLK_PERIOD / 2;\n";
+            $tb .= "        {$clkname} <= '1';\n";
+            $tb .= "        wait for CLK_PERIOD / 2;\n";
+            $tb .= "    end process clk_gen;\n\n";
+        }
+
+        // Stimulus process.
+        $tb .= "    stim_proc : process is\n";
         $tb .= "    begin\n";
-        $tb .= "        -- TODO: add stimulus here.\n";
+        if ($rstname !== null) {
+            $tb .= "        -- Apply reset\n";
+            $tb .= "        {$rstname} <= '1';\n";
+            if ($hasclock) {
+                $tb .= "        wait for 2 * CLK_PERIOD;\n";
+            } else {
+                $tb .= "        wait for 20 ns;\n";
+            }
+            $tb .= "        {$rstname} <= '0';\n";
+            if ($hasclock) {
+                $tb .= "        wait for CLK_PERIOD;\n\n";
+            } else {
+                $tb .= "        wait for 10 ns;\n\n";
+            }
+        } else {
+            $tb .= "        wait for 20 ns;\n\n";
+        }
+        $tb .= "        -- TODO: add test vectors here\n\n";
         $tb .= "        wait;\n";
-        $tb .= "    end process;\n\n";
+        $tb .= "    end process stim_proc;\n\n";
+
         $tb .= "end architecture sim;\n";
 
         $response = new \stdClass();
-        $response->filename = '_tb.vhd';
+        $response->filename = $tbfilename;
         $response->content  = $tb;
         return $response;
     }

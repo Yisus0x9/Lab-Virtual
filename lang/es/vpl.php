@@ -623,3 +623,6 @@ $string['websocket_protocol'] = 'Protocolo WebSocket';
 $string['websocket_protocol_description'] = 'Tipo protocolo WebSocket (ws:// or wss://) a usar por el navegador al conectarse al servidor de ejecución.';
 $string['workingperiods'] = 'Periodos de trabajo';
 $string['worktype'] = 'Tipo de trabajo';
+$string['novhdlfilesfortestbench'] = 'No se encontraron archivos VHDL/HDL. Sube al menos un archivo .vhd, .vhdl para generar un testbench.';
+$string['emptyvhdlfilefortestbench'] = 'El archivo \'{$a}\' está vacío. Agrega contenido VHDL antes de generar un testbench.';
+$string['remote_lab_fields_required'] = 'El servidor, usuario y contraseña son obligatorios para conectarse al laboratorio remoto.';

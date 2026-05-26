@@ -3,10 +3,15 @@
 # Default remote lab script for VPL
 # License http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-USER="${VPL_SSH_USER:-eq3arq}"
-HOST="${VPL_SSH_HOST:-148.204.59.118}"
-PASS="${VPL_SSH_PASS:-e3aam118242}"
+USER="$VPL_SSH_USER"
+HOST="$VPL_SSH_HOST"
+PASS="$VPL_SSH_PASS"
 PORT=22
+
+if [ -z "$HOST" ] || [ -z "$USER" ] || [ -z "$PASS" ]; then
+    echo "ERROR: Debes ingresar el servidor, usuario y contraseña para conectarte al laboratorio remoto."
+    exit 1
+fi
 CONNECT_TIMEOUT=8
 SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=${CONNECT_TIMEOUT} -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -o GSSAPIAuthentication=no"
 
