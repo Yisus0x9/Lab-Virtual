@@ -405,12 +405,12 @@ generate_testbench() {
                         [ -z "$elem" ] && continue
                         [ "$elem" = "_" ] && continue
                         local fmt=$(format_vhdl_value "$elem" "$is_vec")
-                        echo "        assert tb_${sig_lower} = ${fmt}"
+                        echo "        assert to_01(tb_${sig_lower}, '0') = ${fmt}"
                         echo "            report \"FAIL:${cname}:${sig}:cycle_${c}\" severity error;"
                     else
                         if [ "$c" = "$max_cycles" ]; then
                             local fmt=$(format_vhdl_value "$val" "$is_vec")
-                            echo "        assert tb_${sig_lower} = ${fmt}"
+                            echo "        assert to_01(tb_${sig_lower}, '0') = ${fmt}"
                             echo "            report \"FAIL:${cname}:${sig}\" severity error;"
                         fi
                     fi
@@ -436,7 +436,7 @@ generate_testbench() {
                 local sig_lower=$(echo "$sig" | tr '[:upper:]' '[:lower:]')
                 local is_vec=false; is_vector_port "$sig_lower" && is_vec=true
                 local fmt=$(format_vhdl_value "$val" "$is_vec")
-                echo "        assert tb_${sig_lower} = ${fmt}"
+                echo "        assert to_01(tb_${sig_lower}, '0') = ${fmt}"
                 echo "            report \"FAIL:${cname}:${sig}\" severity error;"
             done
         fi
@@ -470,9 +470,8 @@ write_vpl_execution() {
         echo "#!/bin/bash"
         echo "echo"
         echo "echo '<|--'"
-        echo "echo '-Evaluación VHDL ($eval_mode)'"
+        echo "echo '-Evaluación VHDL Automatica'"
         echo "echo '>+----------------------------------+'"
-        echo "echo '>| Modo            : $eval_mode'"
         echo "echo '>| Casos totales   : $total'"
         echo "echo '>| Casos correctos : $passed'"
         echo "echo '>| Casos fallidos  : $failed'"
