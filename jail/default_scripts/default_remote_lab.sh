@@ -1,7 +1,13 @@
 #!/bin/bash
 # This file is part of VPL for Moodle
-# Default remote lab script for VPL
+# Remote lab script for VHDL in VPL
+# Transfers the submitted VHDL files to a remote lab over SSH and opens an
+# interactive session. The connection data is provided by the IDE through the
+# VPL_SSH_HOST / VPL_SSH_USER / VPL_SSH_PASS environment variables.
 # License http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+
+# Load VPL environment so the SSH credentials (VPL_SSH_*) sent by the IDE are available.
+. common_script.sh
 
 USER="$VPL_SSH_USER"
 HOST="$VPL_SSH_HOST"
@@ -42,7 +48,7 @@ echo "Conexión disponible."
 
 # Recolectar archivos VHDL en una lista antes de transferir
 FILES=()
-for f in *.vhdl *.vhd; do
+for f in *.vhdl *.vhd *.v *.sv *.vh; do
     [ -f "\$f" ] && FILES+=("\$f")
 done
 
@@ -61,3 +67,5 @@ sshpass -p "\$PASS" ssh -t \$SSH_OPTS "\${USER}@\${HOST}"
 EOF
 
 chmod +x vpl_execution
+
+echo $(ls)

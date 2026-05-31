@@ -765,7 +765,7 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
      */
     public function prepare_execution($type) {
         $data = self::prepare_execution_base($this->vpl, $type);
-        if ($type < 3) {
+        if ($type < 3 || $type == self::TREMOTELAB) {
             $data = $this->prepare_execution_submission($data);
         } else {
             self::prepare_execution_evaluation_tests($data);

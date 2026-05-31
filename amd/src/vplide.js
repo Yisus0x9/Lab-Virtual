@@ -44,6 +44,9 @@ var VPLIDE = function(rootId, options) {
     var showErrorMessage;
     var updateMenu;
     var executionActions;
+    var sshHost = '';
+    var sshUser = '';
+    var sshPass = '';
     var minNumberOfFiles = options.minfiles || 0;
     var maxNumberOfFiles = options.maxfiles || 0;
     var restrictedEdit = options.restrictededitor || options.example;
@@ -1293,18 +1296,18 @@ var VPLIDE = function(rootId, options) {
         if (!(event.type == 'click' || ((event.type == 'keypress') && event.keyCode == 13))) {
             return true;
         }
-        var host = $('#vpl_ide_input_ssh_host').val().trim();
-        var user = $('#vpl_ide_input_ssh_user').val().trim();
-        var pass = $('#vpl_ide_input_ssh_pass').val();
-        if (!host || !user || !pass) {
+        sshHost = $('#vpl_ide_input_ssh_host').val().trim();
+        sshUser = $('#vpl_ide_input_ssh_user').val().trim();
+        sshPass = $('#vpl_ide_input_ssh_pass').val();
+        if (!sshHost || !sshUser || !sshPass) {
             showErrorMessage(str('remote_lab_fields_required'));
             return false;
         }
         dialogRemoteLab.dialog('close');
         executionRequest('remote_lab', 'remotelabbing', {
-            SSH_HOST: host,
-            SSH_USER: user,
-            SSH_PASS: pass,
+            SSH_HOST: sshHost,
+            SSH_USER: sshUser,
+            SSH_PASS: sshPass,
         });
     }
     var dialogRemoteLabButtons = {};
@@ -1988,6 +1991,12 @@ var VPLIDE = function(rootId, options) {
      * Launches the remote lab action
      */
     function remoteLabAction() {
+        // Always ask for credentials on each click; do not reuse previous ones.
+        sshHost = '';
+        sshUser = '';
+        sshPass = '';
+        $('#vpl_ide_input_ssh_host').val('');
+        $('#vpl_ide_input_ssh_user').val('');
         $('#vpl_ide_input_ssh_pass').val('');
         dialogRemoteLab.dialog('open');
     }

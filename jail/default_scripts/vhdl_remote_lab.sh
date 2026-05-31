@@ -1,55 +1,69 @@
 #!/bin/bash
+# This file is part of VPL for Moodle
 # Remote lab script for VHDL in VPL
-# Compiles the submitted VHDL files with GHDL and launches an interactive simulation.
+# Transfers the submitted VHDL files to a remote lab over SSH and opens an
+# interactive session. The connection data is provided by the IDE through the
+# VPL_SSH_HOST / VPL_SSH_USER / VPL_SSH_PASS environment variables.
+# License http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-log_info()    { echo "SUCCESS:=> $*"; }
-log_error()   { echo "ERROR:=> $*"; }
-log_success() { echo "Comment :=>>$*"; }
-
+# Load VPL environment so the SSH credentials (VPL_SSH_*) sent by the IDE are available.
 . common_script.sh
 
-log_info "Remote lab: searching source files..."
+USER="$VPL_SSH_USER"
+HOST="$VPL_SSH_HOST"
+PASS="$VPL_SSH_PASS"
+PORT=22
 
-get_source_files v sv vh NOERROR
-if [ "$?" != "0" ]; then
-    get_source_files vhd vhdl NOERROR
+if [ -z "$HOST" ] || [ -z "$USER" ] || [ -z "$PASS" ]; then
+    echo "ERROR: Debes ingresar el servidor, usuario y contraseña para conectarte al laboratorio remoto."
+    exit 1
 fi
+CONNECT_TIMEOUT=8
+SSH_OPTS="-o StrictHostKeyChecking=no -o ConnectTimeout=${CONNECT_TIMEOUT} -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -o GSSAPIAuthentication=no"
 
-if [ -z "$SOURCE_FILES" ]; then
-    log_error "No source files found."
+cat << EOF > vpl_execution
+#!/bin/bash
+
+USER="$USER"
+HOST="$HOST"
+PASS="$PASS"
+PORT="$PORT"
+CONNECT_TIMEOUT="$CONNECT_TIMEOUT"
+SSH_OPTS="$SSH_OPTS"
+
+# Verificar si sshpass está disponible
+if ! command -v sshpass &> /dev/null; then
+    echo "ERROR: sshpass no está instalado en este servidor."
     exit 1
 fi
 
-SAVEIFS=$IFS
-IFS=$'\n'
+# Verificar conectividad antes de intentar SSH
+echo "Verificando conexión con \$HOST:\$PORT..."
+if ! timeout \$CONNECT_TIMEOUT bash -c "echo > /dev/tcp/\$HOST/\$PORT" 2>/dev/null; then
+    echo "ERROR: No se puede alcanzar \$HOST:\$PORT (timeout \${CONNECT_TIMEOUT}s)."
+    echo "Verifique que el servidor esté encendido y accesible desde esta red."
+    exit 1
+fi
+echo "Conexión disponible."
 
-for FILENAME in $SOURCE_FILES; do
-    log_info "Analyzing: $FILENAME"
-    ghdl -a --std=08 "$FILENAME"
-    if [ $? -ne 0 ]; then
-        log_error "Analysis failed for $FILENAME"
-        IFS=$SAVEIFS
-        exit 1
-    fi
+# Recolectar archivos VHDL en una lista antes de transferir
+FILES=()
+for f in *.vhdl *.vhd *.v *.sv *.vh; do
+    [ -f "\$f" ] && FILES+=("\$f")
 done
 
-IFS=$SAVEIFS
-log_success "All source files analyzed. Ready for simulation."
-
-# Detect top-level entity from the last source file.
-TOPLEVEL=$(ghdl --list-files 2>/dev/null | head -1 | sed 's/\.vhd$//' | tr '[:upper:]' '[:lower:]')
-
-if [ -z "$TOPLEVEL" ]; then
-    log_error "Could not determine top-level entity."
-    exit 1
+if [ \${#FILES[@]} -gt 0 ]; then
+    echo "Transfiriendo \${#FILES[@]} archivo(s) VHDL..."
+    sshpass -p "\$PASS" scp \$SSH_OPTS "\${FILES[@]}" "\${USER}@\${HOST}:~/" && \
+        echo "Transferencia completada." || \
+        echo "Advertencia: error al transferir algunos archivos."
+else
+    echo "No se encontraron archivos .vhdl/.vhd para transferir."
 fi
 
-log_info "Elaborating top-level entity: $TOPLEVEL"
-ghdl -e --std=08 "$TOPLEVEL"
-if [ $? -ne 0 ]; then
-    log_error "Elaboration failed."
-    exit 1
-fi
+# Iniciar sesión SSH interactiva
+echo "Conectando a \$HOST..."
+sshpass -p "\$PASS" ssh -t \$SSH_OPTS "\${USER}@\${HOST}"
+EOF
 
-log_success "Elaboration successful. Launching remote lab simulation..."
-ghdl -r --std=08 "$TOPLEVEL" --wave=output.ghw 2>&1
+chmod +x vpl_execution

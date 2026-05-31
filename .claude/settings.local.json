@@ -18,7 +18,10 @@
       "Bash(grep -n \"compilation\\\\|compile_output\\\\|getResult\\\\|processResult\\\\|showResult\\\\|htmlEncode\\\\|compilation_execution\" \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\amd\\\\\\\\src\\\\\\\\vplide.js\" | head -30)",
       "Bash(grep -n \"processResult\\\\|htmlEncode\\\\|Comment\\\\|SUCCESS\\\\|INFO\\\\|class.*vpl\" \"\\\\\\\\\\\\\\\\wsl.localhost\\\\\\\\Ubuntu\\\\\\\\var\\\\\\\\www\\\\\\\\html\\\\\\\\moodle\\\\\\\\mod\\\\\\\\vpl\\\\\\\\amd\\\\\\\\src\\\\\\\\vplutil.js\" | head -50)",
       "Bash(wsl --exec bash -n \"//wsl.localhost/Ubuntu/var/www/html/moodle/mod/vpl/jail/default_scripts/vpl_vhdl_lib.sh\")",
-      "Bash(wsl bash *)"
+      "Bash(wsl bash *)",
+      "Bash(cd \"\\\\\\\\wsl.localhost\\\\Ubuntu\\\\var\\\\www\\\\html\\\\moodle\\\\mod\\\\vpl\")",
+      "Bash(cd \"\\\\\\\\wsl.localhost\\\\Ubuntu\\\\var\\\\www\\\\html\\\\moodle\")",
+      "Bash(ls node_modules/.bin/grunt)"
     ],
     "additionalDirectories": [
       "\\\\wsl.localhost\\Ubuntu\\var\\www\\html\\moodle\\mod\\vpl\\editor\\ace9"

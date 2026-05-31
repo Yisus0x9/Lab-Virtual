@@ -491,18 +491,14 @@ class mod_vpl_edit {
             $tb .= "        {$rstname} <= '1';\n";
             if ($hasclock) {
                 $tb .= "        wait for 2 * CLK_PERIOD;\n";
-            } else {
-                $tb .= "        wait for 20 ns;\n";
-            }
+            } 
             $tb .= "        {$rstname} <= '0';\n";
             if ($hasclock) {
                 $tb .= "        wait for CLK_PERIOD;\n\n";
             } else {
                 $tb .= "        wait for 10 ns;\n\n";
             }
-        } else {
-            $tb .= "        wait for 20 ns;\n\n";
-        }
+        } else
         $tb .= "        -- TODO: add test vectors here\n\n";
         $tb .= "        wait;\n";
         $tb .= "    end process stim_proc;\n\n";
