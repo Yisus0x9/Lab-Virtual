@@ -65,7 +65,7 @@ class mod_vpl_mod_form extends moodleform_mod {
         $mform->addElement('header', 'submissionrestrictions', get_string('submissionrestrictions', VPL));
         $mform->addElement('text', 'maxfiles', get_string('maxfiles', VPL));
         $mform->setType('maxfiles', PARAM_INT);
-        $mform->setDefault('maxfiles', 2);
+        $mform->setDefault('maxfiles', 4);
         $mform->addElement('select', 'worktype', get_string('worktype', VPL), [
                 0 => get_string('individualwork', VPL),
                 1 => get_string('groupwork', VPL),

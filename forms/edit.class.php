@@ -262,10 +262,10 @@ class mod_vpl_edit {
             $submission = new mod_vpl_submission_CE($vpl, $lastsub);
         }
         $code = ['run' => 0, 'debug' => 1, 'evaluate' => 2, 'test_evaluate' => 3,
-                 'remote_lab' => 4];
+                 'remote_lab' => 4, 'remote_download' => 6];
         $traslate = ['run' => 'run', 'debug' => 'debugged',
                      'evaluate' => 'evaluated', 'test_evaluate' => 'evaluated',
-                     'remote_lab' => 'run'];
+                     'remote_lab' => 'run', 'remote_download' => 'run'];
         $eventclass = '\mod_vpl\event\submission_' . $traslate[$action];
         $eventclass::log($submission);
         return $submission->run($code[$action], $options);

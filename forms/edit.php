@@ -86,6 +86,7 @@ $options['run'] = ($instance->run || $grader);
 $options['debug'] = ($instance->debug || $grader);
 $options['evaluate'] = ($instance->evaluate || $grader);
 $options['remote_lab'] = ($instance->remote_lab || $grader);
+$options['remote_download'] = ($instance->remote_lab || $grader);
 $options['generate_testbench'] = ($instance->generate_testbench || $grader);
 $options['example'] = true && $instance->example;
 $options['comments'] = ! $options['example'];

@@ -3,7 +3,7 @@
 # Default debug script for VPL
 # Copyright (C) 2012 Juan Carlos Rodríguez-del-Pino
 # License http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
-# Author Jesus Peñarrieta Villa
+# Author Jesus Peñarrieta Villa , Jonathan Treviño Hernández
 # Logs
 log_info()    { echo "-INFO:=>  $*"; }
 log_error()   { echo "-ERROR:=> $*"; }

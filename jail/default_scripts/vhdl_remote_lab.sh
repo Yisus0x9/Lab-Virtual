@@ -48,7 +48,7 @@ echo "Conexión disponible."
 
 # Recolectar archivos VHDL en una lista antes de transferir
 FILES=()
-for f in *.vhdl *.vhd *.v *.sv *.vh; do
+for f in *.vhdl *.vhd *.v *.sv *.vh *.bit *.xdc; do
     [ -f "\$f" ] && FILES+=("\$f")
 done
 

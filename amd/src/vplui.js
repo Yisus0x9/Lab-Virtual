@@ -239,6 +239,8 @@ VPLUI.iconFolder = function() {
         'evaluate': 'check-square-o',
         'remote_lab': '@fa-solid fa-microchip',
         'remotelabbing': '@fa-solid fa-microchip fa-spin',
+        'remote_download': '@fa-solid fa-cloud-arrow-down',
+        'downloadingremote': '@fa-solid fa-cloud-arrow-down fa-spin',
         'generate_testbench': '@fa-brands fa-centercode',
         'generatingtestbench': '@fa-brands fa-centercode fa-spin',
         'console': 'terminal',

@@ -160,6 +160,10 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
      */
     const TGENERATETESTBENCH = 5;
     /**
+     * Identify the remote download execution type.
+     */
+    const TREMOTEDOWNLOAD = 6;
+    /**
      * Directory name for evaluation tests.
      * This directory must be in the execution files.
      * It is used to store the evaluation tests of evaluation.
@@ -199,6 +203,7 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
         'vpl_test_evaluate.sh' => self::TTESTEVALUATE,
         'vpl_remote_lab.sh' => self::TREMOTELAB,
         'vpl_generate_testbench.sh' => self::TGENERATETESTBENCH,
+        'vpl_remote_download.sh' => self::TREMOTEDOWNLOAD,
     ];
     /**
      * Associative array for getting the script to use based on the execution type.
@@ -211,6 +216,7 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
         self::TTESTEVALUATE => 'vpl_test_evaluate.sh',
         self::TREMOTELAB => 'vpl_remote_lab.sh',
         self::TGENERATETESTBENCH => 'vpl_generate_testbench.sh',
+        self::TREMOTEDOWNLOAD => 'vpl_remote_download.sh',
     ];
 
     /**
@@ -247,7 +253,7 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
      */
     public static function get_script($action, $detectedpln, $data) {
         // Grant action validity for be part of a filename.
-        if (! in_array($action, ['run', 'debug', 'evaluate', 'test_evaluate', 'remote_lab', 'generate_testbench'])) {
+        if (! in_array($action, ['run', 'debug', 'evaluate', 'test_evaluate', 'remote_lab', 'generate_testbench', 'remote_download'])) {
             throw new coding_exception('Invalid action for get_script: ' . $action);
         }
         $basepath = vpl_get_scripts_dir() . '/';
@@ -296,6 +302,9 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
         }
         if ($type == self::TREMOTELAB) {
             $ret['vpl_remote_lab.sh'] = self::get_script('remote_lab', $detectedpln, $data);
+        }
+        if ($type == self::TREMOTEDOWNLOAD) {
+            $ret['vpl_remote_download.sh'] = self::get_script('remote_download', $detectedpln, $data);
         }
         if ($type == self::TGENERATETESTBENCH) {
             $ret['vpl_generate_testbench.sh'] = self::get_script('generate_testbench', $detectedpln, $data);
@@ -728,7 +737,7 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
         $data->files['vpl_environment.sh'] = $enviromentcontent;
         // Add common script.
         $data->files['common_script.sh'] = file_get_contents(vpl_get_scripts_dir() . '/common_script.sh');
-        // @author Jesus Peñarrieta Villa - Add common script for evaluator
+        // @author Jesus Peñarrieta Villa , Jonathan Treviño Hernández - Add common script for evaluator
         $data->files['vpl_vhdl_lib.sh'] = file_get_contents(vpl_get_scripts_dir() . '/vpl_vhdl_lib.sh');
 
         // Add new script for evaluation mode test_in_gui if needed.
@@ -765,7 +774,7 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
      */
     public function prepare_execution($type) {
         $data = self::prepare_execution_base($this->vpl, $type);
-        if ($type < 3 || $type == self::TREMOTELAB) {
+        if ($type < 3 || $type == self::TREMOTELAB || $type == self::TREMOTEDOWNLOAD) {
             $data = $this->prepare_execution_submission($data);
         } else {
             self::prepare_execution_evaluation_tests($data);
@@ -910,6 +919,7 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
             'SSH_HOST' => 'VPL_SSH_HOST',
             'SSH_USER' => 'VPL_SSH_USER',
             'SSH_PASS' => 'VPL_SSH_PASS',
+            'REMOTE_FILE' => 'VPL_REMOTE_FILE',
         ];
         $enviromentvars = '';
         foreach ($optionsvars as $option => $varname) {
@@ -1018,6 +1028,9 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
         if ($response === false) {
             throw new Exception(get_string('serverexecutionerror', VPL) . ' getresult no repsonse');
         }
+        if ($processinfo->type == self::TREMOTEDOWNLOAD) {
+            return self::extract_remote_download($response);
+        }
         if ($response['interactive'] == 0 && $processinfo->type == 2) {
             $this->saveCE($response);
             if ($response['executed'] > 0) {
@@ -1033,6 +1046,64 @@ class mod_vpl_submission_CE extends mod_vpl_submission {
             }
         }
         return $this->get_CE_for_editor($response);
+    }
+    /**
+     * Extract a file downloaded from the remote lab out of the execution output.
+     *
+     * The jail script prints, for every requested file, its name and base64
+     * content framed by markers (see default_remote_download.sh). This parses
+     * that output and returns an editor-result object carrying the files so the
+     * IDE can add them to the student's files.
+     *
+     * @param array $response Jail getresult response.
+     * @return object Editor result with ->downloadedFiles [{name, content, encoding}].
+     * @throws Exception if the remote download failed.
+     */
+    public static function extract_remote_download($response) {
+        $output = isset($response['execution']) ? $response['execution'] : '';
+        // Surface a fatal error reported by the script (no file could be fetched).
+        if (preg_match('/VPL_DOWNLOAD_ERROR:(.*)/', $output, $em)) {
+            throw new Exception(get_string('remote_download_failed', VPL, trim($em[1])));
+        }
+        // Extract each file block: name + base64 content between markers.
+        $pattern = '/VPL_DOWNLOAD_NAME:([^\r\n]*)\R+VPL_DOWNLOAD_BEGIN\R(.*?)\R?VPL_DOWNLOAD_END/s';
+        if (! preg_match_all($pattern, $output, $matches, PREG_SET_ORDER)) {
+            throw new Exception(get_string('remote_download_failed', VPL, 'no output'));
+        }
+        $files = [];
+        foreach ($matches as $m) {
+            $filename = basename(trim($m[1]));
+            $base64 = preg_replace('/\s+/', '', $m[2]);
+            $content = base64_decode($base64, true);
+            if ($content === false) {
+                continue;
+            }
+            $file = new stdClass();
+            $file->name = $filename;
+            // Send text as-is (editable); send binary as base64 to keep the JSON valid.
+            if (mb_check_encoding($content, 'UTF-8')) {
+                $file->content = $content;
+                $file->encoding = 0;
+            } else {
+                $file->content = $base64;
+                $file->encoding = 1;
+            }
+            $files[] = $file;
+        }
+        if (empty($files)) {
+            throw new Exception(get_string('remote_download_failed', VPL, 'no content'));
+        }
+        $ce = new stdClass();
+        $ce->downloadedFiles = $files;
+        // Report files that could not be fetched, if any, without failing the rest.
+        if (preg_match_all('/VPL_DOWNLOAD_FILEERROR:([^:\r\n]*):?(.*)/', $output, $fe, PREG_SET_ORDER)) {
+            $failed = [];
+            foreach ($fe as $f) {
+                $failed[] = trim($f[1]);
+            }
+            $ce->downloadMessage = get_string('remote_download_failed', VPL, implode(', ', $failed));
+        }
+        return $ce;
     }
     /**
      * Check if the process is running.

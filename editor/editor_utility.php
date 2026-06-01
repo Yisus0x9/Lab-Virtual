@@ -119,7 +119,7 @@ class vpl_editor_util {
     }
 
     /**
-     * @Author Jesus Peñarrieta Villa
+     * @Author Jesus Peñarrieta Villa , Jonathan Treviño Hernández
      * Prints the HTML tag for the VPL IDE.
      */
     public static function print_tag() {
@@ -131,6 +131,7 @@ class vpl_editor_util {
         $remotehost = s(get_string('remote_lab_host', VPL));
         $remoteuser = s(get_string('remote_lab_user', VPL));
         $remotepass = s(get_string('remote_lab_pass', VPL));
+        $remotefile = s(get_string('remote_download_file', VPL));
 
         $html = <<<"HTML"
 <div id="$tagid" class="vpl_ide vpl_ide_root">
@@ -177,6 +178,27 @@ class vpl_editor_util {
             <input type="password" id="vpl_ide_input_ssh_pass"
                 value="" class="ui-widget-content ui-corner-all"
                 style="width:100%" autocomplete="current-password" />
+        </fieldset>
+    </div>
+    <div id="vpl_ide_dialog_remote_download" class="vpl_ide_dialog"
+        style="display: none;">
+        <fieldset style="border:none;padding:0">
+            <label for="vpl_ide_input_dl_host">$remotehost</label><br>
+            <input type="text" id="vpl_ide_input_dl_host"
+                value="" class="ui-widget-content ui-corner-all"
+                style="width:100%;margin-bottom:8px" /><br>
+            <label for="vpl_ide_input_dl_user">$remoteuser</label><br>
+            <input type="text" id="vpl_ide_input_dl_user"
+                value="" class="ui-widget-content ui-corner-all"
+                style="width:100%;margin-bottom:8px" autocomplete="username" /><br>
+            <label for="vpl_ide_input_dl_pass">$remotepass</label><br>
+            <input type="password" id="vpl_ide_input_dl_pass"
+                value="" class="ui-widget-content ui-corner-all"
+                style="width:100%;margin-bottom:8px" autocomplete="current-password" /><br>
+            <label for="vpl_ide_input_dl_file">$remotefile</label><br>
+            <input type="text" id="vpl_ide_input_dl_file"
+                value="" class="ui-widget-content ui-corner-all"
+                style="width:100%" />
         </fieldset>
     </div>
     <div id="vpl_ide_dialog_renamedir" class="vpl_ide_dialog"
@@ -428,7 +450,13 @@ HTML;
                 'remote_lab_user',
                 'remote_lab_pass',
                 'remote_lab_fields_required',
+                'remote_download',
+                'remote_download_file',
+                'remote_download_fields_required',
+                'remote_download_invalid',
+                'downloadingremote',
                 'connect',
+                'download',
         ];
         $words = [
                 'cancel',

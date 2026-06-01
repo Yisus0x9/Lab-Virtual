@@ -73,6 +73,7 @@ var VPLIDE = function(rootId, options) {
         'debug': true,
         'evaluate': true,
         'remote_lab': true,
+        'remote_download': true,
         'generate_testbench': true,
         'import': true,
         'resetfiles': true,
@@ -979,6 +980,29 @@ var VPLIDE = function(rootId, options) {
         }
     };
     this.setResult = function(res, go) {
+        // Files downloaded from the remote lab: add them to the student files.
+        if (res && res.downloadedFiles) {
+            var lastAdded = null;
+            for (var di = 0; di < res.downloadedFiles.length; di++) {
+                var dl = res.downloadedFiles[di];
+                var addedDl = fileManager.addFile(
+                    {name: dl.name, contents: dl.content, encoding: dl.encoding || 0},
+                    true,
+                    updateMenu,
+                    showErrorMessage
+                );
+                if (addedDl) {
+                    lastAdded = addedDl;
+                }
+            }
+            if (lastAdded) {
+                fileManager.open(lastAdded);
+            }
+            if (res.downloadMessage) {
+                showErrorMessage(res.downloadMessage);
+            }
+            return;
+        }
         self.updateEvaluationNumber(res);
         var files = fileManager.getFiles();
         var fileNames = [];
@@ -1287,7 +1311,7 @@ var VPLIDE = function(rootId, options) {
 
     var dialogRemoteLab = $('#vpl_ide_dialog_remote_lab');
     /*
-     * @author Jesus Peñarrieta Villa
+     * @author Jesus Peñarrieta Villa , Jonathan Treviño Hernández
      * The event handler for the remote lab connect action
      * @param {Object} event
      * @return {boolean}
@@ -1321,6 +1345,72 @@ var VPLIDE = function(rootId, options) {
         buttons: dialogRemoteLabButtons
     }));
     VPLUI.setDialogTitleIcon(dialogRemoteLab, 'remote_lab');
+
+    var dialogRemoteDownload = $('#vpl_ide_dialog_remote_download');
+    /*
+     * @author Jesus Peñarrieta Villa , Jonathan Treviño Hernández
+     * The event handler for the remote download action.
+     * Asks the credentials and the remote file, then downloads it into the student files.
+     * @param {Object} event
+     * @return {boolean}
+    */
+    function remoteDownloadHandler(event) {
+        if (!(event.type == 'click' || ((event.type == 'keypress') && event.keyCode == 13))) {
+            return true;
+        }
+        var dlHost = $('#vpl_ide_input_dl_host').val().trim();
+        var dlUser = $('#vpl_ide_input_dl_user').val().trim();
+        var dlPass = $('#vpl_ide_input_dl_pass').val();
+        var dlFile = $('#vpl_ide_input_dl_file').val().trim();
+        if (!dlHost || !dlUser || !dlPass || !dlFile) {
+            showErrorMessage(str('remote_download_fields_required'));
+            return false;
+        }
+        // Accept "file1,file2" or "path:file1,file2"; validate the format.
+        var listPart = dlFile;
+        var colon = dlFile.indexOf(':');
+        if (colon >= 0) {
+            var pathPart = dlFile.slice(0, colon).trim();
+            listPart = dlFile.slice(colon + 1).trim();
+            if (!pathPart || !listPart) {
+                showErrorMessage(str('remote_download_invalid'));
+                return false;
+            }
+        }
+        var tokens = listPart.split(',');
+        var validTokens = 0;
+        for (var ti = 0; ti < tokens.length; ti++) {
+            if (tokens[ti].trim() !== '') {
+                validTokens++;
+            } else {
+                // Empty token (e.g. "a,,b" or trailing comma).
+                showErrorMessage(str('remote_download_invalid'));
+                return false;
+            }
+        }
+        if (validTokens === 0) {
+            showErrorMessage(str('remote_download_invalid'));
+            return false;
+        }
+        dialogRemoteDownload.dialog('close');
+        executionRequest('remote_download', 'downloadingremote', {
+            SSH_HOST: dlHost,
+            SSH_USER: dlUser,
+            SSH_PASS: dlPass,
+            REMOTE_FILE: dlFile,
+        });
+    }
+    var dialogRemoteDownloadButtons = {};
+    dialogRemoteDownloadButtons[str('download')] = remoteDownloadHandler;
+    dialogRemoteDownloadButtons[str('cancel')] = function() {
+        $(this).dialog('close');
+    };
+    dialogRemoteDownload.find('input').on('keypress', remoteDownloadHandler);
+    dialogRemoteDownload.dialog($.extend({}, dialogbaseOptions, {
+        title: str('remote_download'),
+        buttons: dialogRemoteDownloadButtons
+    }));
+    VPLUI.setDialogTitleIcon(dialogRemoteDownload, 'remote_download');
 
     var dialogRename = $('#vpl_ide_dialog_rename');
     /**
@@ -1987,7 +2077,7 @@ var VPLIDE = function(rootId, options) {
     });
 
     /**
-     * @Author Jesus Peñarrieta Villa
+     * @Author Jesus Peñarrieta Villa , Jonathan Treviño Hernández , Jonathan Treviño Hernández
      * Launches the remote lab action
      */
     function remoteLabAction() {
@@ -2013,7 +2103,30 @@ var VPLIDE = function(rootId, options) {
     });
 
     /**
-     * @author Jesus Peñarrieta Villa
+     * @author Jesus Peñarrieta Villa , Jonathan Treviño Hernández
+     * Launches the remote download action (always asks for the data on each click).
+     */
+    function remoteDownloadAction() {
+        $('#vpl_ide_input_dl_host').val('');
+        $('#vpl_ide_input_dl_user').val('');
+        $('#vpl_ide_input_dl_pass').val('');
+        $('#vpl_ide_input_dl_file').val('');
+        dialogRemoteDownload.dialog('open');
+    }
+    menuButtons.add({
+        name: 'remote_download',
+        originalAction: function() {
+            executionActions.setLastAction(remoteDownloadAction);
+            remoteDownloadAction();
+        },
+        bindKey: {
+            win: 'Ctrl-F10',
+            mac: 'Command-F10'
+        }
+    });
+
+    /**
+     * @author Jesus Peñarrieta Villa , Jonathan Treviño Hernández
      * Launches the generate testbench action
      */
     function generateTestbenchAction() {
@@ -2127,8 +2240,9 @@ var VPLIDE = function(rootId, options) {
     menuHtml += menuButtons.getHTML('run');
     menuHtml += menuButtons.getHTML('debug');
     menuHtml += menuButtons.getHTML('evaluate');
-    menuHtml += menuButtons.getHTML('remote_lab');
     menuHtml += menuButtons.getHTML('generate_testbench');
+    menuHtml += menuButtons.getHTML('remote_lab');
+    menuHtml += menuButtons.getHTML('remote_download');
     menuHtml += menuButtons.getHTML('comments');
     menuHtml += menuButtons.getHTML('console');
     menuHtml += "</span> ";
@@ -2211,6 +2325,7 @@ var VPLIDE = function(rootId, options) {
         menuButtons.enable('debug', !running && (!modified || options.example) && isOptionAllowed('debug'));
         menuButtons.enable('evaluate', !running && (!modified || options.example) && isOptionAllowed('evaluate'));
         menuButtons.enable('remote_lab', !running && (!modified || options.example) && isOptionAllowed('remote_lab'));
+        menuButtons.enable('remote_download', !running && (!modified || options.example) && isOptionAllowed('remote_download'));
         menuButtons.enable('generate_testbench', !running && (!modified || options.example) && isOptionAllowed('generate_testbench'));
         menuButtons.enable('download', !modified);
         menuButtons.enable('new', nfiles < maxNumberOfFiles);

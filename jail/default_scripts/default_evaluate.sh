@@ -3,7 +3,7 @@
 # Default evaluate script for VPL
 # Copyright (C) 2014 onwards Juan Carlos Rodríguez-del-Pino
 # License http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
-# Author Jesus Peñarrieta Villa
+# Author Jesus Peñarrieta Villa , Jonathan Treviño Hernández
 # ============================================================================
 # VPL VHDL Evaluator v3.0
 # Soporta código combinatorio y secuencial (FSM, registros, shift registers)

@@ -1,6 +1,7 @@
 #!/bin/bash
 # This file is part of VPL for Moodle
 # Remote lab script for VHDL in VPL
+# Authots: Jesus Peñarrieta Villa , Jonathan Treviño Hernández , Jonathan Treviño Hernández
 # Transfers the submitted VHDL files to a remote lab over SSH and opens an
 # interactive session. The connection data is provided by the IDE through the
 # VPL_SSH_HOST / VPL_SSH_USER / VPL_SSH_PASS environment variables.
@@ -48,7 +49,7 @@ echo "Conexión disponible."
 
 # Recolectar archivos VHDL en una lista antes de transferir
 FILES=()
-for f in *.vhdl *.vhd *.v *.sv *.vh; do
+for f in *.vhdl *.vhd *.v *.sv *.vh *.bit *.xdc; do
     [ -f "\$f" ] && FILES+=("\$f")
 done
 
