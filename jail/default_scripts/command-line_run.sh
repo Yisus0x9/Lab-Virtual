@@ -20,7 +20,7 @@ rm vpl_environment.sh &> /dev/null
 rm common_script.sh &> /dev/null
 rm .vpl_* &> /dev/null
 rm vpl_execution
-/bin/bash
+/bin/bash/
 
 END_OF_SCRIPT
 chmod +x vpl_execution

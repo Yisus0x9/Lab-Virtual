@@ -30,7 +30,13 @@
       "Bash(grep -oE 'this.setResult=function\\\\\\(res,go\\\\\\)\\\\{.{260}' amd/build/vplide.min.js)",
       "Read(///wsl.localhost/Ubuntu//**)",
       "Bash(perl -0777 -ne 'if\\(/\\(VPL_DOWNLOAD_NAME:\\([^\\\\r\\\\n]*\\)\\\\R+VPL_DOWNLOAD_BEGIN\\\\R\\(.*?\\)\\\\R?VPL_DOWNLOAD_END\\)/s\\){print \"FULLMATCH_START:\\\\n\"; print substr\\($1,0,40\\),\"\\\\n---\\\\nNAME=[$2]\\\\n\"}' sample2.txt)",
-      "Bash(xxd)"
+      "Bash(xxd)",
+      "Bash(mount)",
+      "PowerShell(wsl -d Ubuntu -- bash -lc \"echo '== service =='; systemctl is-active vpl-jail-system 2>/dev/null; systemctl status vpl-jail-system --no-pager 2>/dev/null | head -5; echo '== running proc =='; ps -eo pid,lstart,cmd 2>/dev/null | grep -i 'vpl-jail-server' | grep -v grep; echo '== binary date =='; ls -la /usr/local/bin/vpl-jail-server; echo '== docker =='; docker ps 2>/dev/null | grep -i vpl\")",
+      "PowerShell(wsl -d Ubuntu -u root -- bash -lc \"cp -f /usr/local/bin/vpl-jail-server /usr/sbin/vpl/vpl-jail-server && echo 'copiado' && ls -la /usr/sbin/vpl/vpl-jail-server && systemctl restart vpl-jail-system && sleep 1 && systemctl is-active vpl-jail-system && ps -eo pid,lstart,cmd | grep '[v]pl-jail-server'\")",
+      "PowerShell(wsl -d Ubuntu -u root -- bash -lc \"stat -c '%y %s %n' /usr/sbin/vpl/vpl-jail-server /usr/local/bin/vpl-jail-server\")",
+      "PowerShell(wsl -d Ubuntu -- bash -lc \"cd /mnt/c/Users/jesus/vpl-jail/vpl-jail-system && make 2>&1 | tail -20\")",
+      "PowerShell(wsl -d Ubuntu -u root -- bash -lc \"cp -f /mnt/c/Users/jesus/vpl-jail/vpl-jail-system/src/vpl-jail-server /usr/sbin/vpl/vpl-jail-server && systemctl restart vpl-jail-system && sleep 1 && systemctl is-active vpl-jail-system && stat -c '%y %n' /usr/sbin/vpl/vpl-jail-server\")"
     ],
     "additionalDirectories": [
       "\\\\wsl.localhost\\Ubuntu\\var\\www\\html\\moodle\\mod\\vpl\\editor\\ace9"

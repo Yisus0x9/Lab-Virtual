@@ -1,6 +1,7 @@
 #!/bin/bash
 # This file is part of VPL for Moodle
 # Remote lab script for VHDL in VPL
+# Authots: Jesus Peñarrieta Villa , Jonathan Treviño Hernández , Jonathan Treviño Hernández
 # Transfers the submitted VHDL files to a remote lab over SSH and opens an
 # interactive session. The connection data is provided by the IDE through the
 # VPL_SSH_HOST / VPL_SSH_USER / VPL_SSH_PASS environment variables.
@@ -61,9 +62,14 @@ else
     echo "No se encontraron archivos .vhdl/.vhd para transferir."
 fi
 
-# Iniciar sesión SSH interactiva
+# Iniciar sesión SSH interactiva.
+# Se fuerza locale UTF-8 y modo UTF-8 de Python en el remoto para que las TUI
+# (curses/rich/textual) emitan caracteres de caja en UTF-8 válido. Sin esto el
+# WebSocket del terminal falla con "Could not decode a text frame as UTF-8".
 echo "Conectando a \$HOST..."
-sshpass -p "\$PASS" ssh -t \$SSH_OPTS "\${USER}@\${HOST}"
+sshpass -p "$PASS" ssh -t $SSH_OPTS "${USER}@${HOST}" "export LANG=C.UTF-8
+  LC_ALL=C.UTF-8 PYTHONUTF8=1 PYTHONIOENCODING=utf-8 TERM=xterm-256color
+  NCURSES_NO_UTF8_ACS=1; exec bash -l"
 EOF
 
 chmod +x vpl_execution

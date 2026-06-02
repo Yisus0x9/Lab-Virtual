@@ -109,18 +109,44 @@ export const VPLTerminal = function(dialogId, terminalId, str) {
             self.startBlinking();
             self.setMessage('');
             self.setTitle(str('connecting'));
+            // Pass the real terminal size to the jail so the pseudo terminal (and the SSH remote)
+            // use the whole window instead of the default 80x24. fitAddon.fit() already ran in show().
+            if (terminal.cols && terminal.rows) {
+                var sizeSep = server.indexOf('?') === -1 ? '?' : '&';
+                server += sizeSep + 'cols=' + terminal.cols + '&rows=' + terminal.rows;
+            }
             ws = new WebSocket(server);
-            ws.writeBuffer = '';
+            // Receive binary frames so the server can send raw UTF-8 bytes. Browsers reject
+            // text frames whose payload is not valid UTF-8, and the jail server may split a
+            // multibyte character across two frames (common with TUI box-drawing), which kills
+            // the connection. xterm.js decodes UTF-8 itself and tolerates partial sequences
+            // across writes, and TextDecoder({stream:true}) reassembles split chars for the
+            // clipboard. Plain text frames (string payloads) are still handled transparently.
+            ws.binaryType = 'arraybuffer';
+            ws.clipDecoder = new TextDecoder('utf-8');
+            ws.writeQueue = [];
+            ws.scheduled = false;
             ws.writeIt = function() {
-                terminal.write(ws.writeBuffer);
-                receiveClipboard(ws.writeBuffer);
-                ws.writeBuffer = '';
+                ws.scheduled = false;
+                for (var i = 0; i < ws.writeQueue.length; i++) {
+                    var chunk = ws.writeQueue[i];
+                    terminal.write(chunk);
+                    if (typeof chunk === 'string') {
+                        receiveClipboard(chunk);
+                    } else {
+                        receiveClipboard(ws.clipDecoder.decode(chunk, {stream: true}));
+                    }
+                }
+                ws.writeQueue = [];
             };
             ws.onmessage = function(event) {
-                if (ws.writeBuffer.length > 0) {
-                    ws.writeBuffer += event.data;
-                } else {
-                    ws.writeBuffer = event.data;
+                var data = event.data;
+                if (data instanceof ArrayBuffer) {
+                    data = new Uint8Array(data);
+                }
+                ws.writeQueue.push(data);
+                if (!ws.scheduled) {
+                    ws.scheduled = true;
                     setTimeout(ws.writeIt, 35);
                 }
             };
@@ -255,9 +281,10 @@ export const VPLTerminal = function(dialogId, terminalId, str) {
      * Limits the size of the dialogo to the IDE
      */
     function controlDialogSize() {
-        // Resize if dialog is large than screen.
-        var bw = tIde.width();
-        var bh = tIde.height();
+        // Clamp to the viewport (not the IDE panel) so the terminal can grow as large as the
+        // window. Clamping to #vplide kept the dialog small when the IDE panel was small.
+        var bw = $(window).width();
+        var bh = $(window).height();
         if (tdialog.width() > bw) {
             tdialog.dialog("option", "width", bw);
         }
@@ -320,6 +347,15 @@ export const VPLTerminal = function(dialogId, terminalId, str) {
     tdialog.parent().css('z-index', 2000);
     this.show = function() {
         tdialog.dialog('open');
+        // Open at a large default size relative to the viewport so the terminal is
+        // comfortable for TUI apps. controlDialogSize() then clamps it to the IDE area
+        // so it never overflows the interface.
+        var w = Math.min(Math.round($(window).width() * 0.85), 1200);
+        var h = Math.min(Math.round($(window).height() * 0.85), 850);
+        tdialog.dialog('option', 'width', w);
+        tdialog.dialog('option', 'height', h);
+        tdialog.dialog('option', 'position', {my: 'center', at: 'center', of: window});
+        controlDialogSize();
         terminal.focus();
         fitAddon.fit();
     };
@@ -346,6 +382,8 @@ export const VPLTerminal = function(dialogId, terminalId, str) {
         const xtermFit = await import(libpath + 'addon-fit/addon-fit.js');
         terminal = new xterm.Terminal({
                     scrollback: 5000,
+                    cols: 140,
+                    rows: 40,
                 });
         fitAddon = new xtermFit.FitAddon();
         terminal.loadAddon(fitAddon);

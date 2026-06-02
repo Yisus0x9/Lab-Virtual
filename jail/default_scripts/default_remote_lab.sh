@@ -62,9 +62,12 @@ else
     echo "No se encontraron archivos .vhdl/.vhd para transferir."
 fi
 
-# Iniciar sesión SSH interactiva
+# Iniciar sesión SSH interactiva.
+# Se fuerza locale UTF-8 y modo UTF-8 de Python en el remoto para que las TUI
+# (curses/rich/textual) emitan caracteres de caja en UTF-8 válido. Sin esto el
+# WebSocket del terminal falla con "Could not decode a text frame as UTF-8".
 echo "Conectando a \$HOST..."
-sshpass -p "\$PASS" ssh -t \$SSH_OPTS "\${USER}@\${HOST}"
+sshpass -p "\$PASS" ssh -t \$SSH_OPTS "\${USER}@\${HOST}" "export LANG=C.UTF-8 LC_ALL=C.UTF-8 PYTHONUTF8=1 PYTHONIOENCODING=utf-8 TERM=xterm-256color; exec bash -l"
 EOF
 
 chmod +x vpl_execution
